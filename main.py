@@ -31,6 +31,38 @@ def main():
 
         print(website_title, website_link)
 
+    video_search_result_list = response.html.find("video-voyager")
+
+    for video_search_result in video_search_result_list:
+        video_link_elem = video_search_result.find("a", first=True)
+        video_link = video_link_elem.attrs.get("href")
+
+        if video_search_result.find("a[aria-label]", first=True):
+            video_thumbnail_elem = video_search_result.find(
+                "a[aria-label]", first=True)
+        else:
+            video_thumbnail_elem = video_search_result.find(
+                "div[aria-hidden='true']", first=True)
+
+        video_title = ""
+
+        if video_link_elem.find("div[role='heading'] span", first=True):
+            video_title = video_link_elem.find(
+                "div[role='heading'] span", first=True).text
+        elif video_link_elem.find("h3", first=True):
+            video_title = video_link_elem.find("h3", first=True).text
+
+        video_duration = "0:0"
+
+        if video_thumbnail_elem.find("div[role='presentation']", first=True):
+            video_duration = video_thumbnail_elem.find(
+                "div[role='presentation']", first=True).text
+
+        if not all([video_title, video_duration, video_link]):
+            continue
+
+        print(video_title, video_duration, video_link)
+
 
 if __name__ == "__main__":
     main()
