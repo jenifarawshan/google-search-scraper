@@ -54,6 +54,11 @@ def parse_website_search_results(html_elem):
     return result_list
 
 
+def convert_duration_to_seconds(duration):
+    hour, min, sec = map(int, ([0] + duration.split(":"))[-3:])
+    return (hour * 3600) + (min * 60) + sec
+
+
 def parse_video_search_results(html_elem):
     result_dict = defaultdict(list)
     result_list = []
@@ -95,11 +100,13 @@ def parse_video_search_results(html_elem):
                 first=True
             ).text
 
+        video_duration_in_seconds = convert_duration_to_seconds(video_duration)
+
         if not all([video_title, video_duration, video_link]):
             continue
 
         result_dict[base_website_url].append({
-            "DurationInSeconds": video_duration,
+            "DurationInSeconds": video_duration_in_seconds,
             "Title": video_title,
             "URL": video_link
         })
