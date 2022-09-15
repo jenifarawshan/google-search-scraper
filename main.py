@@ -169,6 +169,7 @@ def main(search_query):
     output_dict = {
         "q": search_query,
         "pageOneResultCount": "",
+        "pageOneSocialMediaResultCount": "",
         "pageOneVideoResultCount": "",
         "timeTakenInMs": "",
         "results": {"Social Media": [], "Webpages": [], "Videos": []},
@@ -199,7 +200,7 @@ def main(search_query):
     )
     output_dict["pageOneSocialMediaResultCount"] = len(social_media_search_result_list)
     output_dict["pageOneVideoResultCount"] = len(video_search_result_list)
-    output_dict["timeTakenInMS"] = total_time_in_ms
+    output_dict["timeTakenInMs"] = total_time_in_ms
 
     file_name = f"{search_query}-{datetime.now().isoformat()}.json"
 

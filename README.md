@@ -68,6 +68,7 @@ python main.py --help
 {
   "q": "music videos",
   "pageOneResultCount": 7,
+  "pageOneSocialMediaResultCount": 0,
   "pageOneVideoResultCount": 1,
   "timeTakenInMs": 1652.8818607330322,
   "results": {
@@ -160,8 +161,7 @@ python main.py --help
         ]
       }
     ]
-  },
-  "pageOneSocialMediaResultCount": 0
+  }
 }
 ```
 
