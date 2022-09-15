@@ -1,5 +1,6 @@
 from collections import defaultdict
 from requests_html import HTMLSession, urlparse
+import time
 
 
 GOOGLE_SEARCH_URL = "https://google.com/search"
@@ -121,10 +122,14 @@ def parse_video_search_results(html_elem):
 
 
 def main():
-    session = HTMLSession()
+    time_start = time.time()
     search_query = "aws"
+    session = HTMLSession()
     output_dict = {
         "q": search_query,
+        "pageOneResultCount": '',
+        "pageOneVideoResultCount": '',
+        "timeTakenInMS": '',
         "results": {
             "Social Media": [],
             "Webpages": [],
@@ -141,8 +146,15 @@ def main():
     website_search_result_list = parse_website_search_results(response.html)
     video_search_result_list = parse_video_search_results(response.html)
 
+    time_end = time.time()
+    total_time_in_ms = (time_end - time_start) * 1000
+
     output_dict["results"]["Webpages"] = website_search_result_list
     output_dict["results"]["Videos"] = video_search_result_list
+    output_dict["pageOneResultCount"] = len(website_search_result_list + video_search_result_list)
+    output_dict["pageOneVideoResultCount"] = len(video_search_result_list)
+    output_dict["timeTakenInMS"] = total_time_in_ms    
+
 
     from pprint import pprint
 
