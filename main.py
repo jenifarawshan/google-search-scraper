@@ -170,7 +170,7 @@ def main(search_query):
         "q": search_query,
         "pageOneResultCount": "",
         "pageOneVideoResultCount": "",
-        "timeTakenInMS": "",
+        "timeTakenInMs": "",
         "results": {"Social Media": [], "Webpages": [], "Videos": []},
     }
     response = session.get(
