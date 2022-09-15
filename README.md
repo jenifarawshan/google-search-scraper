@@ -39,7 +39,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Run the script
+- Run the script
 
 ```sh
 python main.py
