@@ -1,13 +1,16 @@
 from collections import defaultdict
 from requests_html import HTMLSession, urlparse
+from datetime import datetime
 import time
-
+import json
+import os
 
 GOOGLE_SEARCH_URL = "https://google.com/search"
 GOOGLE_SEARCH_PARAM = "q"
 GOOGLE_SEARCH_RESULT_WRAPPER_SELECTOR = "div.g"
 GOOGLE_SEARCH_RESULT_VIDEO_WRAPPER_SELECTOR = "video-voyager"
 SOCIAL_MEDIA_WEBSITES = ["twitter.com", "facebook.com","instagram.com", "linkedin.com", "reddit.com"]
+DB_DIR_NAME = "Database"
 
 def get_base_website_url(url):
     parsed_url = urlparse(url)
@@ -160,7 +163,7 @@ def main():
     total_time_in_ms = (time_end - time_start) * 1000
 
     output_dict["results"]["Webpages"] = website_search_result_list
-    output_dict["results"]["Social Medias"] = social_media_search_result_list
+    output_dict["results"]["Social Media"] = social_media_search_result_list
     output_dict["results"]["Videos"] = video_search_result_list
     output_dict["pageOneResultCount"] = len(
         website_search_result_list + social_media_search_result_list + video_search_result_list
@@ -169,10 +172,12 @@ def main():
     output_dict["pageOneVideoResultCount"] = len(video_search_result_list)
     output_dict["timeTakenInMS"] = total_time_in_ms    
 
+    file_name = f"{search_query}-{datetime.now().isoformat()}.json"
 
-    from pprint import pprint
+    os.makedirs(DB_DIR_NAME, exist_ok=True)
 
-    pprint(output_dict)
+    with open(os.path.join(DB_DIR_NAME, file_name), "w") as f:
+        json.dump(output_dict, f, indent=2)
 
 
 if __name__ == "__main__":
