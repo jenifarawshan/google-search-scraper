@@ -31,39 +31,53 @@ def get_root_domain(url):
     return ".".join(urlparse(url).netloc.rsplit(".", 2)[-2:])
 
 
+def convert_duration_to_seconds(duration):
+    hour, min, sec = map(int, ([0] + duration.split(":"))[-3:])
+    return (hour * 3600) + (min * 60) + sec
+
+
 def parse_website_search_results(html_elem):
     result_dict = defaultdict(list)
     social_media_result_list = []
     website_result_list = []
+
     website_search_result_list = html_elem.find(GOOGLE_SEARCH_RESULT_WRAPPER_SELECTOR)
 
     for website_search_result in website_search_result_list:
-        if (
-            website_search_result.element.getparent().tag
-            == GOOGLE_SEARCH_RESULT_VIDEO_WRAPPER_SELECTOR
-        ):
-            continue
+        try:
+            if (
+                website_search_result.element.getparent().tag
+                == GOOGLE_SEARCH_RESULT_VIDEO_WRAPPER_SELECTOR
+            ):
+                continue
 
-        website_link_elem = website_search_result.find("a", first=True)
-        website_link = website_link_elem.attrs.get("href")
-        base_website_url = get_base_website_url(website_link)
+            website_link_elem = website_search_result.find("a", first=True)
 
-        website_title = ""
+            if not website_link_elem:
+                continue
 
-        if website_link_elem.find("h3", first=True):
-            website_title = website_link_elem.find("h3", first=True).text
-        elif website_search_result.find("h3:last-child", first=True):
-            website_title = website_title = website_search_result.find(
-                "h3:last-child", first=True
-            ).text
+            website_link = website_link_elem.attrs.get("href")
+            base_website_url = get_base_website_url(website_link)
 
-        if not all([website_title, website_link]):
-            continue
+            website_title = ""
 
-        result_dict[base_website_url].append(
-            {"Title": website_title, "URL": website_link}
-        )
+            if website_link_elem.find("h3", first=True):
+                website_title = website_link_elem.find("h3", first=True).text
+            elif website_search_result.find("h3:last-child", first=True):
+                website_title = website_title = website_search_result.find(
+                    "h3:last-child", first=True
+                ).text
 
+            if not all([website_title, website_link]):
+                continue
+
+            result_dict[base_website_url].append(
+                {"Title": website_title, "URL": website_link}
+            )
+
+        except Exception as e:
+            print(getattr(e, "message"), repr(e))
+        
     for k, v in result_dict.items():
         result = {"Website": k, "results": v}
         domain = get_root_domain(result["Website"])
@@ -75,11 +89,6 @@ def parse_website_search_results(html_elem):
     return website_result_list, social_media_result_list
 
 
-def convert_duration_to_seconds(duration):
-    hour, min, sec = map(int, ([0] + duration.split(":"))[-3:])
-    return (hour * 3600) + (min * 60) + sec
-
-
 def parse_video_search_results(html_elem):
     result_dict = defaultdict(list)
     result_list = []
@@ -88,45 +97,56 @@ def parse_video_search_results(html_elem):
     )
 
     for video_search_result in video_search_result_list:
-        video_link_elem = video_search_result.find("a", first=True)
-        video_link = video_link_elem.attrs.get("href")
+        try:
 
-        if video_search_result.find("a[aria-label]", first=True):
-            video_thumbnail_elem = video_search_result.find("a[aria-label]", first=True)
-        else:
-            video_thumbnail_elem = video_search_result.find(
-                "div[aria-hidden='true']", first=True
+            video_link_elem = video_search_result.find("a", first=True)
+
+            if not video_link_elem:
+                continue
+
+            video_link = video_link_elem.attrs.get("href")
+
+            if video_search_result.find("a[aria-label]", first=True):
+                video_thumbnail_elem = video_search_result.find("a[aria-label]", first=True)
+            else:
+                video_thumbnail_elem = video_search_result.find(
+                    "div[aria-hidden='true']", first=True
+                )
+
+            video_title = ""
+
+            if video_link_elem.find("div[role='heading'] span", first=True):
+                video_title = video_link_elem.find(
+                    "div[role='heading'] span", first=True
+                ).text
+            elif video_link_elem.find("h3", first=True):
+                video_title = video_link_elem.find("h3", first=True).text
+            elif video_link_elem.attrs.get("aria-label"):
+                video_title = video_link_elem.attrs.get("aria-label")
+            
+            base_website_url = get_base_website_url(video_link)
+
+            video_duration = "0:0"
+
+            if video_thumbnail_elem.find("div[role='presentation']", first=True):
+                video_duration = video_thumbnail_elem.find(
+                    "div[role='presentation']", first=True
+                ).text
+
+            video_duration_in_seconds = convert_duration_to_seconds(video_duration)
+
+            if not all([video_title, video_duration, video_link]):
+                continue
+
+            result_dict[base_website_url].append(
+                {
+                    "DurationInSeconds": video_duration_in_seconds,
+                    "Title": video_title,
+                    "URL": video_link,
+                }
             )
-
-        video_title = ""
-
-        if video_link_elem.find("div[role='heading'] span", first=True):
-            video_title = video_link_elem.find(
-                "div[role='heading'] span", first=True
-            ).text
-        elif video_link_elem.find("h3", first=True):
-            video_title = video_link_elem.find("h3", first=True).text
-        base_website_url = get_base_website_url(video_link)
-
-        video_duration = "0:0"
-
-        if video_thumbnail_elem.find("div[role='presentation']", first=True):
-            video_duration = video_thumbnail_elem.find(
-                "div[role='presentation']", first=True
-            ).text
-
-        video_duration_in_seconds = convert_duration_to_seconds(video_duration)
-
-        if not all([video_title, video_duration, video_link]):
-            continue
-
-        result_dict[base_website_url].append(
-            {
-                "DurationInSeconds": video_duration_in_seconds,
-                "Title": video_title,
-                "URL": video_link,
-            }
-        )
+        except Exception as e:
+            print(getattr(e, "message"), repr(e))
 
     for k, v in result_dict.items():
         result_list.append({"Website": k, "results": v})
