@@ -7,16 +7,21 @@ GOOGLE_SEARCH_URL = "https://google.com/search"
 GOOGLE_SEARCH_PARAM = "q"
 GOOGLE_SEARCH_RESULT_WRAPPER_SELECTOR = "div.g"
 GOOGLE_SEARCH_RESULT_VIDEO_WRAPPER_SELECTOR = "video-voyager"
+SOCIAL_MEDIA_WEBSITES = ["twitter.com", "facebook.com","instagram.com", "linkedin.com", "reddit.com"]
 
-
-def generate_base_website_url(link):
-    parsed_url = urlparse(link)
+def get_base_website_url(url):
+    parsed_url = urlparse(url)
     return f"{parsed_url.scheme}://{parsed_url.netloc}"
+
+
+def get_root_domain(url):
+    return ".".join(urlparse(url).netloc.rsplit(".", 2)[-2:])
 
 
 def parse_website_search_results(html_elem):
     result_dict = defaultdict(list)
-    result_list = []
+    social_media_result_list = []
+    website_result_list = []
     website_search_result_list = html_elem.find(
         GOOGLE_SEARCH_RESULT_WRAPPER_SELECTOR)
 
@@ -26,7 +31,7 @@ def parse_website_search_results(html_elem):
 
         website_link_elem = website_search_result.find("a", first=True)
         website_link = website_link_elem.attrs.get("href")
-        base_website_url = generate_base_website_url(website_link)
+        base_website_url = get_base_website_url(website_link)
 
         website_title = ""
 
@@ -47,12 +52,17 @@ def parse_website_search_results(html_elem):
         })
 
     for k, v in result_dict.items():
-        result_list.append({
+        result = {
             "Website": k,
             "results": v
-        })
+        }
+        domain = get_root_domain(result["Website"])
+        if domain in SOCIAL_MEDIA_WEBSITES:
+            social_media_result_list.append(result)
+        else:
+            website_result_list.append(result)
 
-    return result_list
+    return website_result_list, social_media_result_list
 
 
 def convert_duration_to_seconds(duration):
@@ -91,7 +101,7 @@ def parse_video_search_results(html_elem):
             ).text
         elif video_link_elem.find("h3", first=True):
             video_title = video_link_elem.find("h3", first=True).text
-        base_website_url = generate_base_website_url(video_link)
+        base_website_url = get_base_website_url(video_link)
 
         video_duration = "0:0"
 
@@ -123,7 +133,7 @@ def parse_video_search_results(html_elem):
 
 def main():
     time_start = time.time()
-    search_query = "aws"
+    search_query = "facebook"
     session = HTMLSession()
     output_dict = {
         "q": search_query,
@@ -143,15 +153,19 @@ def main():
     if response and not hasattr(response, "html"):
         return
 
-    website_search_result_list = parse_website_search_results(response.html)
+    website_search_result_list, social_media_search_result_list = parse_website_search_results(response.html)
     video_search_result_list = parse_video_search_results(response.html)
 
     time_end = time.time()
     total_time_in_ms = (time_end - time_start) * 1000
 
     output_dict["results"]["Webpages"] = website_search_result_list
+    output_dict["results"]["Social Medias"] = social_media_search_result_list
     output_dict["results"]["Videos"] = video_search_result_list
-    output_dict["pageOneResultCount"] = len(website_search_result_list + video_search_result_list)
+    output_dict["pageOneResultCount"] = len(
+        website_search_result_list + social_media_search_result_list + video_search_result_list
+    )
+    output_dict["pageOneSocialMediaResultCount"] = len(social_media_search_result_list)
     output_dict["pageOneVideoResultCount"] = len(video_search_result_list)
     output_dict["timeTakenInMS"] = total_time_in_ms    
 
